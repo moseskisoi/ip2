@@ -88,7 +88,7 @@ To ensure a structured development process, the following Git workflow was imple
 
 1. **Initial Commit**: Forked and cloned the repository, followed by an initial commit.
    ```bash
-   git commit -m "Initial commit: Cloned repository"
+   `git commit -m "Initial comit and Docker file created"`
    ```
 
 2. **Step-by-Step Commits**: Each major change was committed with a descriptive message. Examples:
@@ -136,6 +136,3 @@ A screenshot is attached of my DockerHub repository showing:
 - The `mongo` image with tag `5.0`.
 
 ---
-
-This document provides a detailed explanation of the implementation process and meets all the assessment objectives.
-
