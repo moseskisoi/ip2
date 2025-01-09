@@ -9,7 +9,7 @@ Install the docker engine here:
 ## How to launch the application 
 
 
-![Alt text](/home/kisoi/ip2/dashboard-screenshot.png)
+![Alt text](dashboard-screenshot.png)
 
 ## How to run the app
 Use vagrant up --provison command
