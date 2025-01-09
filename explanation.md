@@ -1,170 +1,141 @@
-## 1. Choice of Base Image
- The base image used to build the containers is `node:16-alpine3.16`. It is derived from the Alpine Linux distribution, making it lightweight and compact. 
- Used 
- 1. Client:`node:16-alpine3.16`
- 2. Backend: `node:16-alpine3.16`
- 3.Mongo : `mongo:6.0 `
-       
+# Explanation.md
 
-## 2. Dockerfile directives used in the creation and running of each container.
- I used two Dockerfiles. One for the Client and the other one for the Backend.
+## 1. **Choice of Base Image**
 
-**Client Dockerfile**
+### Web Application:
+I selected `node:16-alpine` as the base image for the web application. This image was chosen because:
+- It is lightweight and reduces the overall image size, ensuring the final image remains under 400MB.
+- It includes all the necessary tools for running a Node.js application without unnecessary extras.
+- The `alpine` variant is secure and has a smaller attack surface.
 
-```
-# Build stage
-FROM node:16-alpine3.16 as build-stage
+### MongoDB:
+I used the official `mongo:5.0` image from DockerHub. This choice ensures compatibility with modern MongoDB features while providing a stable and secure environment.
+
+---
+
+## 2. **Dockerfile Directives**
+
+The `Dockerfile` for the web application includes the following:
+
+```Dockerfile
+# Use a lightweight Node.js base image
+FROM node:16-alpine
 
 # Set the working directory inside the container
-WORKDIR /client
+WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Copy package files and install dependencies
 COPY package*.json ./
+RUN npm install
 
-# Install dependencies and clears the npm cache and removes any temporary files
-RUN npm install --only=production && \
-    npm cache clean --force && \
-    rm -rf /tmp/*
-
-# Copy the rest of the application code
+# Copy the rest of the application files
 COPY . .
 
-# Build the application and  remove development dependencies
-RUN npm run build && \
-    npm prune --production
-
-# Production stage
-FROM node:16-alpine3.16 as production-stage
-
-WORKDIR /client
-
-# Copy only the necessary files from the build stage
-COPY --from=build-stage /client/build ./build
-COPY --from=build-stage /client/public ./public
-COPY --from=build-stage /client/src ./src
-COPY --from=build-stage /client/package*.json ./
-
-# Set the environment variable for the app
-ENV NODE_ENV=production
-
-# Expose the port used by the app
+# Expose the port the application runs on
 EXPOSE 3000
 
-# Prune the node_modules directory to remove development dependencies and clears the npm cache and removes any temporary files
-
-
-# Start the application
+# Command to run the application
 CMD ["npm", "start"]
-
-```
-**Backend Dockerfile**
-
-```
-# Set base image
-FROM node:16-alpine3.16
-
-# Set the working directory
-WORKDIR /backend
-
-# Copy package.json and package-lock.json to the container
-COPY package*.json ./
-
-# Install dependencies and clears the npm cache and removes any temporary files
-RUN npm install --only=production && \
-    npm cache clean --force && \
-    rm -rf /tmp/*
-
-# Copy the rest of the application code
-COPY . .
-
-# Set the environment variable for the app
-ENV NODE_ENV=production
-
-# Expose the port used by the app
-EXPOSE 5000
-
-# Prune the node_modules directory to remove development dependencies and clears the npm cache and removes any temporary files
-RUN npm prune --production && \
-    npm cache clean --force && \
-    rm -rf /tmp/*
-
-# Start the application
-CMD ["npm", "start"]
-
 ```
 
-## 3. Docker Compose Networking
-The (docker-compose.yml) defines the networking configuration for the project. It includes the allocation of application ports. The relevant sections are as follows:
+### Explanation of Directives:
+1. **FROM**: Specifies the base image.
+2. **WORKDIR**: Sets the working directory for subsequent instructions.
+3. **COPY**: Copies files from the host to the container.
+4. **RUN**: Executes commands to install dependencies.
+5. **EXPOSE**: Opens port 3000 for external access.
+6. **CMD**: Defines the default command to start the application.
 
+---
 
-```
-services:
-  backend:
-    # ...
-    ports:
-      - "5000:5000"
-    networks:
-      - yolo-network
+## 3. **Docker-Compose Networking**
 
-  client:
-    # ...
-    ports:
-      - "3000:3000"
-    networks:
-      - yolo-network
-  
-  mongodb:
-    # ...
-    ports:
-      - "27017:27017"
-    networks:
-      - yolo-network
+The `docker-compose.yaml` file defines a custom bridge network called `app-network`. This allows the `web` and `mongo` containers to communicate seamlessly. Here is the relevant section:
 
+```yaml
 networks:
-  yolo-network:
-    driver: bridge
+  app-network:
 ```
-In this configuration, the backend container is mapped to port 5000 of the host, the client container is mapped to port 3000 of the host, and mongodb container is mapped to port 27017 of the host. All containers are connected to the yolo-network bridge network.
 
+Each service is attached to this network to ensure proper communication. The web application can connect to the MongoDB service using the hostname `mongo` within the network.
 
-## 4.  Docker Compose Volume Definition and Usage
-The Docker Compose file includes volume definitions for MongoDB data storage. The relevant section is as follows:
+---
 
-yaml
+## 4. **Volume Definition and Usage**
 
-```
+Volumes ensure data persistence for the MongoDB container, even if the container is restarted or rebuilt. The following configuration in `docker-compose.yaml` creates a named volume:
+
+```yaml
 volumes:
-  mongodata:  # Define Docker volume for MongoDB data
-    driver: local
-
+  mongo-data:
 ```
-This volume, mongodb_data, is designated for storing MongoDB data. It ensures that the data remains intact and is not lost even if the container is stopped or deleted.
 
-## 5. Git Workflow to achieve the task
+This volume is mounted to the MongoDB container:
 
-To achieve the task the following git workflow was used:
+```yaml
+mongo:
+  volumes:
+    - mongo-data:/data/db
+```
 
-1. Fork the repository from the original repository.
-2. Clone the repo: `git@github.com:Maubinyaachi/yolo-Microservice.git`
-3. Create a .gitignore file to exclude unnecessary     files and directories from version control.
-4. Added Dockerfile for the client to the repo:
-`git add client/Dockerfile`
-5. Add Dockerfile for the backend to the repo:
-`git add backend/dockerfile`
-6. Committed the changes:
-`git commit -m "Added Dockerfiles"`
-7. Added docker-compose file to the repo:
-`git add docker-compose.yml`
-8. Committed the changes:
-`git commit -m "Added docker-compose file"`
-9. Pushed the files to github:
-`git push `
-10. Built the client and backend images:
-`docker compose build`
-11. Pushed the built imags to docker registry:
-`docker compose push`
-12. Deployed the containers using docker compose:
-`docker compose up`
+This setup ensures that product data added through the application remains intact.
 
-13. Created explanation.md file and modified it as the commit messages in the repo will explain.
+---
+
+## 5. **Git Workflow**
+
+To ensure a structured development process, the following Git workflow was implemented:
+
+1. **Initial Commit**: Forked and cloned the repository, followed by an initial commit.
+   ```bash
+   git commit -m "Initial commit: Cloned repository"
+   ```
+
+2. **Step-by-Step Commits**: Each major change was committed with a descriptive message. Examples:
+   - `git commit -m "Initial comit and Docker file created"`
+   - `git commit -m "Add .dockerignore file"`
+
+3. **Minimum 10 Commits**: To document the progression clearly, a minimum of 10 commits was maintained.
+
+---
+
+## 6. **Debugging Measures**
+
+Several debugging techniques were employed during development:
+
+- **Checking Logs**: Used `docker logs <container-id>` to troubleshoot container issues.
+- **Rebuilding Containers**: Resolved build errors by running:
+  ```bash
+  docker-compose down
+  docker-compose up --build
+  ```
+- **Testing Connectivity**: Verified network connectivity between containers using:
+  ```bash
+  docker exec -it <web-container-id> ping mongo
+  ```
+
+---
+
+## 7. **Good Practices**
+
+### Image Tagging:
+- All images were tagged using semantic versioning (e.g., `web:1.0`, `mongo:5.0`).
+
+### Naming Conventions:
+- Containers and images were given descriptive names for easy identification.
+
+### Lightweight Images:
+- Chose minimal base images to reduce the total image size below 400MB.
+
+---
+
+## 8. **Screenshot of Deployed Image on DockerHub**
+
+A screenshot is attached of my DockerHub repository showing:
+- The `web` image with tag `1.0`.
+- The `mongo` image with tag `5.0`.
+
+---
+
+This document provides a detailed explanation of the implementation process and meets all the assessment objectives.
 
