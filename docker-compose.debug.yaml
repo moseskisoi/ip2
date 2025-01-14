@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongo
+    networks:
+      - app-network
+    environment:
+      - NODE_ENV=development
+      - DEBUG=*
+    volumes:
+      - ./src:/app/src  # Mounts source code for live updates
+      - /app/node_modules  # Avoids overwriting node_modules in container
+
+  mongo:
+    image: mongo:5.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - app-network
+
+volumes:
+  mongo-data:
+
+networks:
+  app-network:
