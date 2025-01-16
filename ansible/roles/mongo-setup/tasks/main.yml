@@ -1,0 +1,8 @@
+- name: Run MongoDB Container
+  docker_container:
+    name: mongo
+    image: mongo:5.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - "mongo-data:/data/db"
