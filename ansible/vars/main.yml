@@ -1,0 +1,2 @@
+web_app_repo: "https://github.com/moseskisoi/ip2.git"
+mongo_port: "27017"
