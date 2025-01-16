@@ -1,6 +1,6 @@
 - name: Clone E-commerce App Repository
   git:
-    repo: https://github.com/your-repo/ecommerce.git
+    repo: https://github.com/moseskisoi/ip2.git
     dest: /var/www/ecommerce
 
 - name: Build and Run Docker Containers
