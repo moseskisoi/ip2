@@ -1,0 +1,9 @@
+- name: Clone E-commerce App Repository
+  git:
+    repo: https://github.com/your-repo/ecommerce.git
+    dest: /var/www/ecommerce
+
+- name: Build and Run Docker Containers
+  shell: docker-compose up -d
+  args:
+    chdir: /var/www/ecommerce
